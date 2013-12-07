@@ -152,7 +152,7 @@ cec_vendor_id CExynosCECAdapterCommunication::GetVendorId(void)
 
 uint16_t CExynosCECAdapterCommunication::GetPhysicalAddress(void)
 {  
-  return 0x1000;
+  return 0x2000;
 }
 
 
