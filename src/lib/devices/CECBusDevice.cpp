@@ -61,6 +61,78 @@ using namespace PLATFORM;
 #define LIB_CEC     m_processor->GetLib()
 #define ToString(p) CCECTypeUtils::ToString(p)
 
+CResponse::CResponse(cec_opcode opcode) :
+    m_opcode(opcode)
+{
+}
+
+CResponse::~CResponse(void)
+{
+  Broadcast();
+}
+
+bool CResponse::Wait(uint32_t iTimeout)
+{
+  return m_event.Wait(iTimeout);
+}
+
+void CResponse::Broadcast(void)
+{
+  m_event.Broadcast();
+}
+
+CWaitForResponse::CWaitForResponse(void)
+{
+}
+
+CWaitForResponse::~CWaitForResponse(void)
+{
+  Clear();
+}
+
+void CWaitForResponse::Clear()
+{
+  PLATFORM::CLockObject lock(m_mutex);
+  for (std::map<cec_opcode, CResponse*>::iterator it = m_waitingFor.begin(); it != m_waitingFor.end(); it++)
+  {
+    it->second->Broadcast();
+    delete it->second;
+  }
+  m_waitingFor.clear();
+}
+
+bool CWaitForResponse::Wait(cec_opcode opcode, uint32_t iTimeout)
+{
+  CResponse *response = GetEvent(opcode);
+  return response ? response->Wait(iTimeout) : false;
+}
+
+void CWaitForResponse::Received(cec_opcode opcode)
+{
+  CResponse *response = GetEvent(opcode);
+  if (response)
+    response->Broadcast();
+}
+
+CResponse* CWaitForResponse::GetEvent(cec_opcode opcode)
+{
+  CResponse *retVal(NULL);
+  {
+    PLATFORM::CLockObject lock(m_mutex);
+    std::map<cec_opcode, CResponse*>::iterator it = m_waitingFor.find(opcode);
+    if (it != m_waitingFor.end())
+    {
+      retVal = it->second;
+    }
+    else
+    {
+      retVal = new CResponse(opcode);
+      m_waitingFor[opcode] = retVal;
+    }
+    return retVal;
+  }
+}
+
 CCECBusDevice::CCECBusDevice(CCECProcessor *processor, cec_logical_address iLogicalAddress, uint16_t iPhysicalAddress /* = CEC_INVALID_PHYSICAL_ADDRESS */) :
   m_type                  (CEC_DEVICE_TYPE_RESERVED),
   m_iPhysicalAddress      (iPhysicalAddress),
@@ -817,7 +889,7 @@ void CCECBusDevice::SetDeviceStatus(const cec_bus_device_status newStatus, cec_v
       if (m_deviceStatus != newStatus)
         LIB_CEC->AddLog(CEC_LOG_DEBUG, "%s (%X): device status changed into 'handled by libCEC'", GetLogicalAddressName(), m_iLogicalAddress);
       SetPowerStatus   (CEC_POWER_STATUS_ON);
-      SetVendorId      (CEC_VENDOR_UNKNOWN);
+      SetVendorId      (CEC_VENDOR_PULSE_EIGHT);
       SetMenuState     (CEC_MENU_STATE_ACTIVATED);
       SetCecVersion    (libCECSpecVersion);
       SetStreamPath    (CEC_INVALID_PHYSICAL_ADDRESS);
@@ -1010,14 +1082,12 @@ void CCECBusDevice::MarkAsActiveSource(void)
     if ((*it)->GetLogicalAddress() != m_iLogicalAddress)
       (*it)->MarkAsInactiveSource();
 
-  if (bWasActivated)
-  {
-    if (IsHandledByLibCEC())
-      m_processor->SetActiveSource(true, false);
-    CCECClient *client = GetClient();
-    if (client)
-      client->SourceActivated(m_iLogicalAddress);
-  }
+  if (bWasActivated && IsHandledByLibCEC())
+    m_processor->SetActiveSource(true, false);
+
+  CCECClient *client = GetClient();
+  if (client)
+    client->SourceActivated(m_iLogicalAddress);
 }
 
 void CCECBusDevice::MarkAsInactiveSource(bool bClientUnregistered /* = false */)

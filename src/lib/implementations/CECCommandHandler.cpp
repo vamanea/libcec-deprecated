@@ -257,6 +257,14 @@ int CCECCommandHandler::HandleDeviceVendorCommandWithId(const cec_command & UNUS
 int CCECCommandHandler::HandleDeviceVendorId(const cec_command &command)
 {
   SetVendorId(command);
+
+  if (command.initiator == CECDEVICE_TV)
+  {
+    CCECBusDevice* primary = m_processor->GetPrimaryDevice();
+    if (primary)
+      primary->TransmitVendorID(CECDEVICE_BROADCAST, false, false);
+  }
+
   return COMMAND_HANDLED;
 }
 
@@ -455,6 +463,13 @@ int CCECCommandHandler::HandleReportPhysicalAddress(const cec_command &command)
   {
     uint16_t iNewAddress = ((uint16_t)command.parameters[0] << 8) | ((uint16_t)command.parameters[1]);
     SetPhysicalAddress(command.initiator, iNewAddress);
+
+    if (command.initiator == CECDEVICE_TV)
+    {
+      CCECBusDevice* primary = m_processor->GetPrimaryDevice();
+      if (primary)
+        primary->TransmitPhysicalAddress(false);
+    }
     return COMMAND_HANDLED;
   }
   return CEC_ABORT_REASON_INVALID_OPERAND;

@@ -1,5 +1,4 @@
-#pragma once
-/*
+﻿/*
  * This file is part of the libCEC(R) library.
  *
  * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
@@ -31,44 +30,27 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "CECCommandHandler.h"
-#include "lib/platform/threads/threads.h"
+using CecSharp;
+using LibCECTray.Properties;
 
-namespace CEC
+namespace LibCECTray.controller.actions
 {
-  class CAQPowerStatusCheck;
-
-  class CAQCommandHandler : public CCECCommandHandler
+  class ActivateSource : UpdateProcess
   {
-    friend class CAQPowerStatusCheck;
-  public:
-    CAQCommandHandler(CCECBusDevice *busDevice,
-                      int32_t iTransmitTimeout = CEC_DEFAULT_TRANSMIT_TIMEOUT,
-                      int32_t iTransmitWait = CEC_DEFAULT_TRANSMIT_WAIT,
-                      int8_t iTransmitRetries = CEC_DEFAULT_TRANSMIT_RETRIES,
-                      int64_t iActiveSourcePending = 0);
-    virtual ~CAQCommandHandler(void);
+    public ActivateSource(LibCecSharp lib)
+    {
+      _lib = lib;
+    }
 
-  protected:
-    virtual bool PowerOn(const cec_logical_address iInitiator, const cec_logical_address iDestination);
+    public override void Process()
+    {
+      SendEvent(UpdateEventType.StatusText, Resources.action_activating_source);
+      SendEvent(UpdateEventType.ProgressBar, 50);
 
-  private:
-    CAQPowerStatusCheck* m_powerOnCheck;
-  };
+      var bResult = _lib.SetActiveSource(CecDeviceType.Reserved);
+      SendEvent(UpdateEventType.ProgressBar, 100);
+    }
 
-  class CAQPowerStatusCheck : public PLATFORM::CThread
-  {
-  public:
-    CAQPowerStatusCheck(CAQCommandHandler* handler, cec_logical_address iInitiator, cec_logical_address iDestination) :
-      m_handler(handler),
-      m_iInitiator(iInitiator),
-      m_iDestination(iDestination) {}
-    virtual ~CAQPowerStatusCheck(void) {}
-
-  private:
-    void* Process(void);
-    CAQCommandHandler* m_handler;
-    cec_logical_address m_iInitiator;
-    cec_logical_address m_iDestination;
-  };
-};
+    private readonly LibCecSharp _lib;
+  }
+}
