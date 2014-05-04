@@ -41,10 +41,10 @@
 #include "lib/platform/util/StdString.h"
 #include "lib/platform/util/buffer.h"
 
-extern "C" {
 #include "libcec.h"
-}
 
+#define CEC_DEFAULT_PADDR 0x1000
+#define CEC_PADDR_FNAME   "/sys/module/s5p_hdmi/parameters/source_phy_addr"
 using namespace std;
 using namespace CEC;
 using namespace PLATFORM;
@@ -156,8 +156,17 @@ cec_vendor_id CExynosCECAdapterCommunication::GetVendorId(void)
 
 
 uint16_t CExynosCECAdapterCommunication::GetPhysicalAddress(void)
-{  
-  return 0x2000;
+{
+  uint16_t phys_addr = CEC_DEFAULT_PADDR;
+
+  FILE *f = fopen(CEC_PADDR_FNAME, "r");
+  if(f) {
+    if(fscanf(f, "%hu", &phys_addr) != 1)
+      phys_addr = CEC_DEFAULT_PADDR;
+
+    fclose(f);
+  }
+  return phys_addr;
 }
 
 
@@ -172,7 +181,7 @@ cec_logical_addresses CExynosCECAdapterCommunication::GetLogicalAddresses(void)
 bool CExynosCECAdapterCommunication::SetLogicalAddresses(const cec_logical_addresses &addresses)
 {
   unsigned int log_addr = addresses.primary;
-  
+
   if (CECSetLogicalAddr(log_addr) == 0)
   {
     LIB_CEC->AddLog(CEC_LOG_ERROR, "%s: CECSetLogicalAddr failed !", __func__);
@@ -180,7 +189,7 @@ bool CExynosCECAdapterCommunication::SetLogicalAddresses(const cec_logical_addre
   }
   m_logicalAddresses = addresses;
   m_bLogicalAddressChanged = true;
-  
+
   return true;
 }
 

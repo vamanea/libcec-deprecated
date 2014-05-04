@@ -217,8 +217,8 @@ int CECReceiveMessage(unsigned char *buffer, int size, long timeout)
         return 0;
     }
 
-    tv.tv_sec = 0;
-    tv.tv_usec = timeout;
+    tv.tv_sec = timeout / 1000000;
+    tv.tv_usec = timeout % 1000000;
 
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
