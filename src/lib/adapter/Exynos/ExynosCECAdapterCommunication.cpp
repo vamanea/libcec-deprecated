@@ -83,8 +83,9 @@ bool CExynosCECAdapterCommunication::Open(uint32_t iTimeoutMs, bool UNUSED(bSkip
 {
   if (CECOpen())
   {
-    if (!bStartListening || CreateThread())
+    if (!bStartListening || CreateThread()) {
         return true;
+    }
   }
   CECClose();
   return false;
@@ -118,7 +119,7 @@ cec_adapter_message_state CExynosCECAdapterCommunication::Write(
     LIB_CEC->AddLog(CEC_LOG_ERROR, "%s: data size too large !", __func__);
     return ADAPTER_MESSAGE_STATE_ERROR;
   }
-  
+ 
   buffer[0] = (data.initiator << 4) | (data.destination & 0x0f);
 
   if (data.opcode_set)
@@ -129,10 +130,14 @@ cec_adapter_message_state CExynosCECAdapterCommunication::Write(
     memcpy(&buffer[size], data.parameters.data, data.parameters.size);
     size += data.parameters.size;
   }
-    
 
-  if (CECSendMessage(buffer, size) != size)
-    LIB_CEC->AddLog(CEC_LOG_ERROR, "%s: write failed !", __func__);
+  uint32_t ret = CECSendMessage(buffer, size);
+  if (ret != size) {
+    LIB_CEC->AddLog(CEC_LOG_ERROR, "%s: write failed ret = %08x !", __func__, ret);
+  }
+  else {
+    rc = ADAPTER_MESSAGE_STATE_SENT_ACKED;
+  }
 
   return rc;
 }
@@ -202,14 +207,14 @@ void *CExynosCECAdapterCommunication::Process(void)
     size = CECReceiveMessage(buffer, CEC_MAX_FRAME_SIZE, 1000000);
     if ( size > 0)
     {
-      initiator = cec_logical_address(buffer[0] >> 4);
-      destination = cec_logical_address(buffer[0] & 0x0f);
-      
+        initiator = cec_logical_address(buffer[0] >> 4);
+        destination = cec_logical_address(buffer[0] & 0x0f);
+
         cec_command cmd;
 
         cec_command::Format(
           cmd, initiator, destination,
-          ( size > 3 ) ? cec_opcode(buffer[1]) : CEC_OPCODE_NONE);
+          ( size > 1 ) ? cec_opcode(buffer[1]) : CEC_OPCODE_NONE);
 
         for( uint8_t i = 2; i < size; i++ )
           cmd.parameters.PushBack(buffer[i]);
