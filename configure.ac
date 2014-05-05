@@ -60,9 +60,9 @@ AC_ARG_WITH([tda995x-toolkit-path],
 ## Exynos support
 AC_ARG_ENABLE([exynos],
   [AS_HELP_STRING([--enable-exynos],
-  [enable support for the Exynos (default is no)])],
+  [enable support for the Exynos (default is yes)])],
   [use_exynos=$enableval],
-  [use_exynos=no])
+  [use_exynos=yes])
 
 ## Raspberry Pi support
 AC_ARG_ENABLE([rpi],
