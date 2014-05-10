@@ -1,3 +1,4 @@
+#pragma once
 /*
  * This file is part of the libCEC(R) library.
  *
@@ -31,18 +32,9 @@
  *     http://www.pulse-eight.net/
  */
 
-#include "env.h"
-#include <stdio.h>
 
-#if defined(HAVE_EXYNOS_API)
-#include "ExynosCECAdapterDetection.h"
-#include "ExynosCEC.h"
-
-using namespace CEC;
-
-bool CExynosCECAdapterDetection::FindAdapter(void)
-{
-  return access(CEC_DEVICE_NAME, 0) == 0;
-}
-
-#endif
+#define CEC_DEFAULT_PADDR   0x1000
+#define CEC_PADDR_NAME      "/sys/module/s5p_hdmi/parameters/source_phy_addr"
+#define CEC_DEVICE_NAME     "/dev/CEC"
+#define CEC_IOC_SETLADDR    _IOW('c', 0, unsigned int)
+#define CEC_MAX_FRAME_SIZE  16

@@ -2,6 +2,7 @@
 /*
  * This file is part of the libCEC(R) library.
  *
+ * libCEC Exynos Code is Copyright (C) 2014 Valentin Manea
  * libCEC(R) is Copyright (C) 2011-2013 Pulse-Eight Limited.  All rights reserved.
  * libCEC(R) is an original work, containing original code.
  *
@@ -35,14 +36,11 @@
 
 #include "lib/platform/threads/mutex.h"
 #include "lib/platform/threads/threads.h"
-#include "lib/platform/sockets/socket.h"
 #include "lib/adapter/AdapterCommunication.h"
 #include <map>
 
 namespace CEC
 {
-  class CAdapterMessageQueueEntry;
-
   class CExynosCECAdapterCommunication : public IAdapterCommunication, public PLATFORM::CThread
   {
   public:
@@ -97,12 +95,7 @@ namespace CEC
     cec_logical_addresses       m_logicalAddresses;
 
     PLATFORM::CMutex            m_mutex;
-    
-    PLATFORM::CMutex            m_messageMutex;
-    uint32_t                    m_iNextMessage;
-    std::map<uint32_t, CAdapterMessageQueueEntry *> m_messages;
+    int                         m_fd;
   };
-  
 };
-
 #endif
